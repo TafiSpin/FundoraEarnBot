@@ -304,10 +304,10 @@
                     } else {
                         const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
                         const newUser = {
-                            id: user.id, name: name || 'Anonymous', fdrBalance: 250.00, usdtBalance: 0.00,
+                            id: user.id, name: name || 'Anonymous', fdrBalance: 25.00, usdtBalance: 0.00,
                             adsWatched: 0, settings: { theme: 'light' }, isBlocked: false, history: {}, completedTasks: {}
                         };
-                        const welcomeHistory = { type: 'earn', description: 'Initial Bonus', amount: 250.00, currency: 'FDR', date: new Date().toISOString() };
+                        const welcomeHistory = { type: 'earn', description: 'Initial Bonus', amount: 25.00, currency: 'FDR', date: new Date().toISOString() };
                         userRef.set(newUser).then(() => { db.ref(`users/${user.id}/history`).push(welcomeHistory); });
                     }
                 });
