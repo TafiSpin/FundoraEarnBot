@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fundora - Watch-to-Earn</title>
+
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- Monetag Ad Integration -->
+    <script 
+      src="//libtl.com/sdk.js" 
+      data-zone="10042024" 
+      data-sdk="show_10042024" 
+      async>
+    </script>
+
+    <style>
+        /* --- Google Font --- */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        /* --- ⚪ LIGHT THEME (DEFAULT) 🔵🟡 --- */
+        :root {
+            --bg-primary: #F7F9FC;
+            --card-bg: #FFFFFF;
+            --text-primary: #1A202C;
+            --text-secondary: #718096;
+            --accent-blue: #3182CE;
+            --accent-gold: #D69E2E;
+            --border-color: #E2E8F0;
+            --success-color: #38A169;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --warning-bg: #FEF3C7;
+            --warning-text: #92400E;
+            --warning-icon: #D97706;
+        }
+
+        /* --- ⚫ DARK THEME 🔵🟡 --- */
+        body.dark-mode {
+            --bg-primary: #121829;
+            --card-bg: #1A202C;
+            --text-primary: #E2E8F0;
+            --text-secondary: #A0AEC0;
+            --accent-blue: #4299E1;
+            --accent-gold: #F6E05E;
+            --border-color: #2D3748;
+            --success-color: #48BB78;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+            --warning-bg: #312e1b;
+            --warning-text: #FEEBC8;
+            --warning-icon: #F6E05E;
+        }
+
+        /* --- Global Styles & Reset --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); transition: background-color 0.3s, color 0.3s; -webkit-font-smoothing: antialiased; }
+        .app-container { padding: 20px; padding-bottom: 100px; }
+        .content-section { display: none; animation: fadeIn 0.4s ease; }
+        .content-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Reusable Components --- */
+        .page-header { margin-bottom: 25px; }
+        .page-header h1 { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+        .page-header p { font-size: 15px; color: var(--text-secondary); }
+        .card { background-color: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border-color); transition: background-color 0.3s, border-color 0.3s; }
+        .btn { display: block; width: 100%; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; text-align: center; text-decoration: none; border: none; }
+        .btn:disabled { background-color: var(--text-secondary); cursor: not-allowed; opacity: 0.7; }
+        .btn-primary { background-color: var(--accent-blue); color: white; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); opacity: 0.9; }
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 15px; }
+
+        /* --- Home Section --- */
+        .balance-card .label { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+        .balance-card .amount { font-size: 36px; font-weight: 700; color: var(--accent-blue); }
+        .balance-card .amount span { font-weight: 400; font-size: 24px; opacity: 0.8; }
+        .balance-card .sub-amount { font-size: 28px; font-weight: 600; color: var(--success-color); }
+        .balance-card .sub-amount span { font-weight: 400; font-size: 20px; opacity: 0.8; }
+        .balance-divider { border: none; height: 1px; background-color: var(--border-color); margin: 15px 0; }
+        .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; margin-bottom: 30px; }
+        .action-item { display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; }
+        .action-icon { width: 56px; height: 56px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); transition: all 0.2s ease; }
+        .action-icon svg { width: 24px; height: 24px; stroke: var(--accent-blue); }
+        .action-item span { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+        .action-item:hover .action-icon { transform: translateY(-4px); background-color: var(--accent-blue); }
+        .action-item:hover .action-icon svg { stroke: white; }
+
+        /* --- List Item (History & Tasks) --- */
+        .list-item { display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--border-color); text-decoration: none; }
+        .list-item:last-child { border-bottom: none; }
+        .list-icon { width: 45px; height: 45px; flex-shrink: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .list-icon svg { width: 22px; height: 22px; }
+        .list-details { flex-grow: 1; }
+        .list-details h3 { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+        .list-details p { font-size: 13px; color: var(--text-secondary); }
+        .list-amount { font-weight: 600; font-size: 15px; }
+        .history-list .list-icon.earn { background-color: #E6FFFA; } .history-list .list-icon.earn svg { stroke: #38B2AC; } .history-list .list-amount.earn { color: #38B2AC; }
+        .history-list .list-icon.withdraw { background-color: #FFF5F5; } .history-list .list-icon.withdraw svg { stroke: #F56565; } .history-list .list-amount.withdraw { color: #F56565; }
+        .history-list .list-icon.usdt_withdraw { background-color: #E6FFFA; } .history-list .list-icon.usdt_withdraw svg { stroke: var(--success-color); } .history-list .list-amount.usdt_withdraw { color: var(--success-color); }
+        .history-list .list-icon.swap { background-color: #EBF4FF; } .history-list .list-icon.swap svg { stroke: var(--accent-blue); } .history-list .list-amount.swap { color: var(--accent-blue); }
+        .history-list .list-icon.referral { background-color: #FEFCBF1A; } .history-list .list-icon.referral svg { stroke: var(--accent-gold); } .history-list .list-amount.referral { color: var(--accent-gold); }
+        .tasks-list .list-item { cursor: pointer; } .tasks-list .list-item.disabled { cursor: not-allowed; opacity: 0.6; }
+        .tasks-list .list-item:hover:not(.disabled) { background-color: rgba(0,0,0,0.02); } body.dark-mode .tasks-list .list-item:hover:not(.disabled) { background-color: rgba(255,255,255,0.02); }
+        .tasks-list .list-icon { background-color: #EBF4FF; } .tasks-list .list-icon svg { stroke: var(--accent-blue); } .tasks-list .list-amount { color: var(--accent-blue); }
+        .daily-limit-card { display: flex; align-items: center; gap: 15px; }
+        .daily-limit-card svg { stroke: var(--accent-gold); width: 24px; height: 24px; }
+        .daily-limit-card h3 { font-size: 16px; font-weight: 500; color: var(--text-primary); }
+        .daily-limit-card p { color: var(--text-secondary); font-size: 14px; }
+        #history-placeholder { text-align: center; color: var(--text-secondary); padding: 20px 0; }
+        .verification-button { padding: 8px 12px; font-size: 14px; border-radius: 8px; font-weight: 600; margin-left: auto;}
+        .verification-button.claim { background-color: var(--accent-blue); color: white;}
+        .verification-button.completed { background-color: var(--success-color); color: white;}
+
+        /* --- Withdrawal Page Options --- */
+        .withdrawal-options { display: flex; flex-direction: column; gap: 15px; }
+        .option-card { display: flex; align-items: center; gap: 20px; padding: 25px 20px; cursor: pointer; transition: all 0.2s ease; }
+        .option-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        body.dark-mode .option-card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.15); }
+        .option-card .option-icon { width: 50px; height: 50px; flex-shrink: 0; background-color: #EBF4FF; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .option-card .option-icon.success { background-color: #E6FFFA; } .option-card .option-icon.success svg { stroke: var(--success-color); }
+        .option-card .option-icon svg { stroke: var(--accent-blue); }
+        .option-card h3 { font-size: 18px; color: var(--text-primary); }
+        .option-card p { font-size: 14px; color: var(--text-secondary); }
+        .withdraw-form-container, .swap-form-container, .usdt-withdraw-form-container { display: none; }
+        .btn-back { display: flex; align-items: center; gap: 8px; background: none; border: none; color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 15px; }
+
+        /* --- Swap Page & Forms --- */
+        .price-info-card { display: flex; justify-content: space-around; text-align: center; }
+        .price-item .label { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+        .price-item .value { font-size: 18px; font-weight: 600; } .price-item .value.current { color: var(--accent-gold); }
+        .listing-date { text-align: center; margin-top: 15px; font-size: 14px; color: var(--text-secondary); }
+        .swap-interface .input-wrapper { background-color: var(--bg-primary); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; }
+        .swap-interface .input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .swap-interface .input-header label { font-size: 14px; color: var(--text-secondary); }
+        .swap-interface .balance-info { font-size: 12px; color: var(--text-secondary); }
+        .swap-interface .balance-info .max-btn { background: none; border: none; color: var(--accent-blue); font-weight: 600; cursor: pointer; padding: 2px 4px; }
+        .swap-interface input { width: 100%; border: none; background: none; color: var(--text-primary); font-size: 24px; font-weight: 600; outline: none; }
+        .swap-icon { text-align: center; margin: -20px 0; z-index: 1; position: relative; }
+        .swap-icon svg { width: 32px; height: 32px; color: var(--accent-blue); background: var(--card-bg); padding: 4px; border-radius: 50%; border: 2px solid var(--border-color); }
+        .referral-card { background: linear-gradient(135deg, var(--accent-blue), #2b6cb0); color: white; text-align: center; }
+        .referral-card .ref-code { background: rgba(255, 255, 255, 0.1); border: 2px dashed rgba(255, 255, 255, 0.5); padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 500; margin: 15px 0; word-break: break-all; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 16px; }
+        .warning-box { display: flex; align-items: flex-start; gap: 12px; background-color: var(--warning-bg); border-radius: 8px; padding: 12px; margin-top: 20px; margin-bottom: 20px; }
+        .warning-box svg { flex-shrink: 0; width: 20px; height: 20px; color: var(--warning-icon); margin-top: 2px; }
+        .warning-box p { font-size: 13px; color: var(--warning-text); line-height: 1.5; } .warning-box strong { color: var(--warning-text); }
+        
+        /* --- Profile Section --- */
+        .profile-card { text-align: center; }
+        .profile-card .avatar { width: 80px; height: 80px; border-radius: 50%; background-color: #EBF4FF; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 0 0 2px var(--accent-blue); background-size: cover; background-position: center; }
+        .profile-card .avatar svg { width: 36px; height: 36px; stroke: var(--accent-blue); }
+        .profile-card h2 { font-size: 20px; } .profile-card p { font-size: 14px; color: var(--text-secondary); }
+        .settings-item, .status-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; }
+        .status-item { padding: 10px 0; }
+        .status-label, .settings-item span { color: var(--text-primary); font-weight: 500; }
+        .status-value { font-weight: 600; }
+        .status-value.verified { color: var(--success-color); }
+        .security-note { font-size: 13px; color: var(--text-secondary); margin-top: 10px; text-align: center; }
+        .theme-switch { position: relative; display: inline-block; width: 50px; height: 28px; } .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; } .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-blue); } input:checked + .slider:before { transform: translateX(22px); }
+
+        /* --- Bottom Navigation Bar --- */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 75px; background-color: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); transition: background-color 0.3s, border-color 0.3s; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease; flex-grow: 1; padding: 10px 0; position: relative; }
+        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; } .nav-item span { font-size: 11px; font-weight: 500; }
+        .nav-item.active { color: var(--accent-blue); } .nav-item.active::after { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background-color: var(--accent-blue); border-radius: 0 0 3px 3px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <main id="home" class="content-section active">
+            <div class="page-header"><h1>Dashboard</h1><p id="home-welcome-message"></p></div>
+            <div class="card balance-card">
+                <div><div class="label">FDR Balance</div><div class="amount" id="home-fdr-balance">0.00 <span>FDR</span></div></div>
+                <hr class="balance-divider">
+                <div><div class="label">USDT Balance</div><div class="sub-amount" id="home-usdt-balance">0.0000 <span>USDT</span></div></div>
+            </div>
+            <div class="quick-actions">
+                <a href="#" class="action-item nav-link" data-target="tasks"><div class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div><span>Tasks</span></a>
+                <a href="#" class="action-item nav-link" data-target="swap"><div class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></div><span>Swap</span></a>
+                <a href="#" class="action-item nav-link" data-target="invite"><div class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg></div><span>Invite</span></a>
+                <a href="#" class="action-item nav-link" data-target="withdrawal"><div class="action-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><polyline points="6 15 12 21 18 15"></polyline></svg></div><span>Withdraw</span></a>
+            </div>
+            <h2 class="section-title">Recent History</h2><div class="card history-list" id="home-history-list"></div>
+        </main>
+        <main id="tasks" class="content-section">
+            <div class="page-header"><h1>Tasks</h1><p>Complete tasks to earn rewards.</p></div>
+            <div class="card daily-limit-card"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><div><h3>Daily Ads Limit</h3><p><span id="ads-watched-count">0</span> / <span id="daily-ads-limit-display">50</span> Watched Today</p></div></div>
+            <div class="card tasks-list" id="dynamic-tasks-list">
+                <a href="#" id="watch-ad-task" class="list-item"><div class="list-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div><div class="list-details"><h3>Watch Video Ad</h3><p>Watch video to earn</p></div><div class="list-amount" id="ad-reward-display">+5 FDR</div></a>
+            </div>
+        </main>
+        <main id="swap" class="content-section">
+            <div class="page-header"><h1>Token Swap</h1><p>Swap your FDR for USDT at a special price.</p></div>
+            <div class="card">
+                <div class="price-info-card">
+                    <div class="price-item"><div class="label">Current Rate</div><div class="value current" id="swap-rate-display">0.0005 USDT</div></div>
+                    <div class="price-item"><div class="label">Listing Price</div><div class="value">0.001 USDT</div></div>
+                </div>
+                <div class="listing-date">Listing Date: Soon</div>
+            </div>
+            <div class="card swap-interface">
+                <div class="input-wrapper"><div class="input-header"><label>You Swap (FDR)</label><span class="balance-info">FDR: <span class="user-fdr-balance">0.00</span> | USDT: <span class="user-usdt-balance">0.00</span> <button class="max-btn" data-target="fdr-input-swap-page">Max</button></span></div><input type="number" id="fdr-input-swap-page" placeholder="0.0"></div>
+                <div class="swap-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg></div>
+                <div class="input-wrapper"><div class="input-header"><label>You Receive (USDT)</label></div><input type="text" id="usdt-output-swap-page" placeholder="0.0000" readonly></div>
+                <button class="btn btn-primary" id="swap-now-btn" style="margin-top: 20px;">Swap Now</button>
+            </div>
+        </main>
+        <main id="invite" class="content-section">
+            <div class="page-header"><h1>Invite Friends</h1><p>Earn 15% of your friends' earnings!</p></div>
+            <div class="card referral-card"><h3>Your Unique Referral Link</h3><div class="ref-code" id="referral-link-display">Loading...</div><button class="btn" id="share-referral-btn" style="background: white; color: var(--accent-blue); margin-top: 10px;">Share on Telegram</button></div>
+        </main>
+        <main id="withdrawal" class="content-section">
+            <div class="page-header"><h1>Cash Out</h1><p>Choose how you want to get your funds.</p></div>
+            <div id="withdrawal-options" class="withdrawal-options">
+                <div id="select-withdraw" class="card option-card"><div class="option-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><polyline points="6 15 12 21 18 15"></polyline></svg></div><div><h3>Withdraw FDR Tokens</h3><p>Transfer FDR to an external wallet.</p></div></div>
+                <div id="select-usdt-withdraw" class="card option-card"><div class="option-icon success"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div><div><h3>Withdraw USDT</h3><p>Transfer USDT to an external BEP-20 wallet.</p></div></div>
+                <div id="select-swap" class="card option-card"><div class="option-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></div><div><h3>Internal Swap</h3><p>Instantly convert your FDR to USDT.</p></div></div>
+            </div>
+            <div id="withdraw-form-container" class="withdraw-form-container">
+                <button class="btn-back"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back</button>
+                <div class="card"><div class="input-group"><label>Amount (FDR) - Balance: <span class="user-fdr-balance">0.00</span></label><input id="withdraw-amount" type="number" placeholder="Minimum 250 FDR"></div><div class="input-group"><label for="wallet-address">Your BEP-20 Wallet Address</label><input id="wallet-address" type="text" placeholder="0x..."></div><div class="warning-box"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><p>Use a personal wallet like <strong>Trust Wallet</strong> or <strong>MetaMask</strong>.</p></div><button class="btn btn-primary" id="withdraw-now-btn">Withdraw FDR</button></div>
+            </div>
+            <div id="usdt-withdraw-form-container" class="usdt-withdraw-form-container">
+                <button class="btn-back"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back</button>
+                <div class="card"><div class="input-group"><label>Amount (USDT) - Balance: <span class="user-usdt-balance">0.0000</span></label><input id="usdt-withdraw-amount" type="number" placeholder="Minimum 0.1 USDT"></div><div class="input-group"><label for="usdt-wallet-address">Your USDT (BEP-20) Wallet Address</label><input id="usdt-wallet-address" type="text" placeholder="0x..."></div><button class="btn btn-primary" id="withdraw-usdt-now-btn">Withdraw USDT</button></div>
+            </div>
+            <div id="swap-form-container" class="swap-form-container">
+                <button class="btn-back"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back</button>
+                <div class="card swap-interface"><div class="input-wrapper"><div class="input-header"><label>You Swap (FDR)</label><span class="balance-info">FDR: <span class="user-fdr-balance">0.00</span> | USDT: <span class="user-usdt-balance">0.00</span> <button class="max-btn" data-target="fdr-input-withdraw-page">Max</button></span></div><input type="number" id="fdr-input-withdraw-page" placeholder="0.0"></div><div class="swap-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg></div><div class="input-wrapper"><div class="input-header"><label>You Receive (USDT)</label></div><input type="text" id="usdt-output-withdraw-page" placeholder="0.0000" readonly></div><button class="btn btn-primary" id="swap-now-withdraw-btn" style="margin-top: 20px;">Swap Now</button></div>
+            </div>
+        </main>
+        <main id="history" class="content-section">
+            <div class="page-header"><h1>History</h1><p>Your full transaction history.</p></div>
+            <div class="card"><div class="history-list" id="full-history-list"></div></div>
+        </main>
+        <main id="profile" class="content-section">
+            <div class="page-header"><h1>Profile</h1><p>Manage your account and settings.</p></div>
+            <div class="card profile-card">
+                <div class="avatar" id="profile-avatar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </div>
+                <h2 id="profile-username"></h2>
+                <p id="profile-userid"></p>
+            </div>
+            <div class="card"><h2 class="section-title">Settings</h2><div class="settings-item"><span>Dark Mode</span><label class="theme-switch" for="theme-toggle"><input type="checkbox" id="theme-toggle" /><span class="slider"></span></label></div></div>
+            <div class="card"><h2 class="section-title">Security Status</h2><div class="status-item"><span class="status-label">IP Verification</span><span class="status-value verified">Verified</span></div><p class="security-note">This helps prevent fraud and ensures a fair platform for all users.</p></div>
+        </main>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-target="home"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg><span>Home</span></div>
+        <div class="nav-item" data-target="tasks"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg><span>Tasks</span></div>
+        <div class="nav-item" data-target="invite"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg><span>Invite</span></div>
+        <div class="nav-item" data-target="history"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v4H1zM1 10h22v4H1zM1 16h22v4H1z"/></svg><span>History</span></div>
+        <div class="nav-item" data-target="profile"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>Profile</span></div>
+    </nav>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- FIREBASE CONFIG (apni details se replace karein) ---
+            const firebaseConfig = {
+  apiKey: "AIzaSyD_Dhqyc4Z_xqtzB7hZO9m6i6yyAyMA1D4",
+  authDomain: "defitasker.firebaseapp.com",
+  databaseURL: "https://defitasker-default-rtdb.firebaseio.com",
+  projectId: "defitasker",
+  storageBucket: "defitasker.firebasestorage.app",
+  messagingSenderId: "910963187937",
+  appId: "1:910963187937:web:eef4eb9729ec7b3fa697a0"
+};
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.database();
+
+            // --- CONSTANTS ---
+            const tg = window.Telegram?.WebApp || {};
+            const user = tg.initDataUnsafe?.user || { id: '12345_TEST', first_name: 'Test', last_name: 'User', photo_url: null, username: 'testuser' }; // Fallback for testing
+            const BOT_USERNAME = 'FundoraEarnBot'; // Apna bot username yahan daalein
+            const BOT_TOKEN = '8138847723:AAHoIZkF1L-UKBPEPotY6ybIbrXgodJikfU'; // Apna BOT TOKEN yahan daalein
+            
+            let appData = {};
+            let appSettings = {};
+
+            function initializeUser() {
+                const userRef = db.ref('users/' + user.id);
+                userRef.on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        appData = snapshot.val();
+                        appData.fdrBalance = appData.fdrBalance || 0;
+                        appData.usdtBalance = appData.usdtBalance || 0;
+                        appData.adsWatched = appData.adsWatched || 0;
+                        appData.settings = appData.settings || { theme: 'light' };
+                        appData.history = appData.history || {};
+                        appData.completedTasks = appData.completedTasks || {};
+                        renderUI();
+                        fetchAndRenderTasks();
+                    } else {
+                        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                        const newUser = {
+                            id: user.id, name: name || 'Anonymous', fdrBalance: 250.00, usdtBalance: 0.00,
+                            adsWatched: 0, settings: { theme: 'light' }, isBlocked: false, history: {}, completedTasks: {}
+                        };
+                        const welcomeHistory = { type: 'earn', description: 'Initial Bonus', amount: 250.00, currency: 'FDR', date: new Date().toISOString() };
+                        userRef.set(newUser).then(() => { db.ref(`users/${user.id}/history`).push(welcomeHistory); });
+                    }
+                });
+            }
+
+            function fetchAppSettings() {
+                db.ref('settings').on('value', (snapshot) => {
+                    appSettings = snapshot.val() || { adReward: 5, dailyAdsLimit: 50, swapRate: 0.0005, minFdrWithdrawal: 250, minUsdtWithdrawal: 0.1 };
+                    renderSettingsUI();
+                });
+            }
+
+            function fetchAndRenderTasks() {
+                db.ref('tasks').on('value', (snapshot) => {
+                    const tasksContainer = document.getElementById('dynamic-tasks-list');
+                    document.querySelectorAll('.dynamic-task').forEach(el => el.remove());
+                    const tasks = snapshot.val();
+                    if (tasks) {
+                        Object.values(tasks).forEach(task => {
+                            if (task.status !== 'active') return;
+                            const isCompleted = appData.completedTasks && appData.completedTasks[task.id];
+                            
+                            let taskElement;
+                            if (task.requiresVerification) {
+                                taskElement = `
+                                    <div class="list-item dynamic-task">
+                                        <div class="list-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></div>
+                                        <div class="list-details"><h3>${task.title}</h3><p>${task.description}</p></div>
+                                        <button class="btn verification-button ${isCompleted ? 'completed' : 'claim'}" data-task-id="${task.id}" data-task-link="${task.link}" ${isCompleted ? 'disabled' : ''}>${isCompleted ? 'Completed' : 'Claim'}</button>
+                                    </div>`;
+                            } else {
+                                taskElement = `
+                                    <a href="${task.link}" target="_blank" class="list-item dynamic-task ${isCompleted ? 'disabled' : ''}" data-task-id="${task.id}" data-reward="${task.reward}">
+                                        <div class="list-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg></div>
+                                        <div class="list-details"><h3>${task.title}</h3><p>${task.description}</p></div>
+                                        <div class="list-amount">+${task.reward} FDR</div>
+                                    </a>`;
+                            }
+                            tasksContainer.insertAdjacentHTML('beforeend', taskElement);
+                        });
+                    }
+                });
+            }
+
+            document.getElementById('dynamic-tasks-list').addEventListener('click', function(e) {
+                const claimButton = e.target.closest('.verification-button');
+                const simpleTaskLink = e.target.closest('a.dynamic-task');
+
+                if (claimButton && !claimButton.disabled) {
+                    e.preventDefault();
+                    const taskId = claimButton.dataset.taskId;
+                    const taskLink = claimButton.dataset.taskLink;
+                    
+                    if (tg.openTelegramLink) tg.openTelegramLink(taskLink);
+                    else window.open(taskLink, '_blank');
+                    
+                    claimButton.textContent = 'Verifying...';
+                    claimButton.disabled = true;
+
+                    if (tg.sendData) {
+                       const dataToSend = JSON.stringify({ action: "verify_join", taskId: taskId });
+                       tg.sendData(dataToSend);
+                    } else {
+                        console.log("tg.sendData not available. Cannot verify in browser.");
+                        setTimeout(() => {
+                           claimButton.textContent = 'Claim';
+                           claimButton.disabled = false;
+                           alert("Verification can only be done inside Telegram.");
+                        }, 3000);
+                    }
+                }
+
+                if (simpleTaskLink && !simpleTaskLink.classList.contains('disabled')) {
+                    const taskId = simpleTaskLink.dataset.taskId;
+                    const reward = parseFloat(simpleTaskLink.dataset.reward);
+                    
+                    simpleTaskLink.classList.add('disabled');
+                    
+                    db.ref(`users/${user.id}/fdrBalance`).transaction(balance => (balance || 0) + reward);
+                    db.ref(`users/${user.id}/completedTasks/${taskId}`).set(true);
+                    addHistory('earn', 'Task Reward', reward, 'FDR');
+                    
+                    if (tg.showPopup) tg.showPopup({ title: 'Success!', message: `You have received ${reward} FDR.`, buttons: [{type: 'ok'}] });
+                    else alert(`You have received ${reward} FDR.`);
+                }
+            });
+
+            function renderUI() {
+                if (!appData || !Object.keys(appData).length || appData.isBlocked) {
+                    document.body.innerHTML = `<div style="text-align: center; padding-top: 50px; color: var(--text-primary);"><h1>${appData && appData.isBlocked ? 'Account Blocked' : 'Loading...'}</h1><p>${appData && appData.isBlocked ? 'Please contact support for assistance.' : ''}</p></div>`;
+                    return;
+                }
+                document.body.classList.toggle('dark-mode', appData.settings?.theme === 'dark');
+                const themeToggle = document.getElementById('theme-toggle');
+                if (themeToggle) themeToggle.checked = (appData.settings?.theme === 'dark');
+                document.getElementById('home-fdr-balance').innerHTML = `${(appData.fdrBalance || 0).toFixed(2)} <span>FDR</span>`;
+                document.getElementById('home-usdt-balance').innerHTML = `${(appData.usdtBalance || 0).toFixed(4)} <span>USDT</span>`;
+                document.querySelectorAll('.user-fdr-balance').forEach(el => el.textContent = (appData.fdrBalance || 0).toFixed(2));
+                document.querySelectorAll('.user-usdt-balance').forEach(el => el.textContent = (appData.usdtBalance || 0).toFixed(4));
+                document.getElementById('home-welcome-message').textContent = `Welcome back, ${appData.name}`;
+                document.getElementById('profile-username').textContent = appData.name;
+                
+                // Update User ID and Username
+                let userIdText = `ID: ${appData.id}`;
+                if (user && user.username) {
+                    userIdText += ` | @${user.username}`;
+                }
+                document.getElementById('profile-userid').textContent = userIdText;
+
+                // Update Profile Picture
+                const avatarDiv = document.getElementById('profile-avatar');
+                if (user && user.photo_url) {
+                    avatarDiv.innerHTML = ''; // Clear the default SVG icon
+                    avatarDiv.style.backgroundImage = `url(${user.photo_url})`;
+                }
+                
+                document.getElementById('referral-link-display').textContent = `https://t.me/${BOT_USERNAME}?startapp=${user.id}`;
+                document.getElementById('ads-watched-count').textContent = appData.adsWatched || 0;
+                
+                const adTaskEl = document.getElementById('watch-ad-task');
+                adTaskEl.classList.toggle('disabled', (appData.adsWatched || 0) >= (appSettings.dailyAdsLimit || 50));
+                adTaskEl.querySelector('.list-details p').textContent = (appData.adsWatched || 0) >= (appSettings.dailyAdsLimit || 50) ? "Daily limit reached" : "Watch video to earn";
+                
+                renderHistory(document.getElementById('home-history-list'), 3);
+                renderHistory(document.getElementById('full-history-list'), 100);
+            }
+
+            function renderSettingsUI() {
+                 document.getElementById('swap-rate-display').textContent = `${appSettings.swapRate || 0.0005} USDT`;
+                document.getElementById('ad-reward-display').textContent = `+${appSettings.adReward || 5} FDR`;
+                document.getElementById('daily-ads-limit-display').textContent = appSettings.dailyAdsLimit || 50;
+                document.getElementById('withdraw-amount').placeholder = `Minimum ${appSettings.minFdrWithdrawal || 250} FDR`;
+                document.getElementById('usdt-withdraw-amount').placeholder = `Minimum ${appSettings.minUsdtWithdrawal || 0.1} USDT`;
+            }
+
+            function addHistory(type, description, amount, currency) {
+                const historyEntry = { type, description, amount, currency, date: new Date().toISOString() };
+                db.ref(`users/${user.id}/history`).push(historyEntry);
+            }
+            
+            function renderHistory(container, limit) {
+                container.innerHTML = '';
+                const historyData = appData.history ? Object.values(appData.history) : [];
+                const recentHistory = historyData.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, limit);
+                if (recentHistory.length === 0) { container.innerHTML = '<p id="history-placeholder">No transaction history.</p>'; return; }
+                recentHistory.forEach(item => {
+                    const iconMap = { earn: '<polyline points="20 6 9 17 4 12"></polyline>', withdraw: '<line x1="5" y1="12" x2="19" y2="12"></line>', usdt_withdraw: '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>', swap: '<polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>', referral: '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle>' };
+                    const sign = (item.type.includes('withdraw') || item.type === 'swap') ? '-' : '+';
+                    const timeAgo = new Date(item.date).toLocaleString();
+                    const iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconMap[item.type]}</svg>`;
+                    const listItem = `<div class="list-item"><div class="list-icon ${item.type}">${iconSVG}</div><div class="list-details"><h3>${item.description}</h3><p>${timeAgo}</p></div><div class="list-amount ${item.type}">${sign}${item.amount.toFixed(item.currency === 'USDT' ? 4 : 2)} ${item.currency}</div></div>`;
+                    container.innerHTML += listItem;
+                });
+            }
+
+            const navItems = document.querySelectorAll('.nav-item');
+            function switchTab(targetId) {
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                navItems.forEach(i => i.classList.remove('active'));
+                const targetSection = document.getElementById(targetId);
+                const targetNavItem = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+                if(targetSection) targetSection.classList.add('active');
+                if(targetNavItem) targetNavItem.classList.add('active');
+                window.scrollTo(0, 0);
+            }
+            navItems.forEach(item => item.addEventListener('click', () => switchTab(item.dataset.target)));
+            document.querySelectorAll('.nav-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); switchTab(link.dataset.target); }); });
+
+            document.getElementById('theme-toggle').addEventListener('change', function() { 
+                const newTheme = this.checked ? 'dark' : 'light';
+                db.ref(`users/${user.id}/settings/theme`).set(newTheme);
+            });
+
+            document.getElementById('watch-ad-task').addEventListener('click', function(e) {
+                e.preventDefault();
+                if ((appData.adsWatched || 0) >= (appSettings.dailyAdsLimit || 50)) { alert("Daily ad limit reached."); return; }
+                if (typeof show_10042024 === "function") {
+                    show_10042024({ ymid: appData.id })
+                    .then(() => {
+                        const adReward = appSettings.adReward || 5;
+                        db.ref(`users/${user.id}`).transaction(currentData => {
+                            if (currentData) {
+                                currentData.fdrBalance = (currentData.fdrBalance || 0) + adReward;
+                                currentData.adsWatched = (currentData.adsWatched || 0) + 1;
+                            }
+                            return currentData;
+                        });
+                        addHistory('earn', 'Ad Reward', adReward, 'FDR');
+                        alert(`Task Complete! ${adReward} FDR has been added.`);
+                    }).catch(() => alert("Ad skipped or failed."));
+                } else { alert('Ad not ready. Try again.'); }
+            });
+
+            document.getElementById('share-referral-btn').addEventListener('click', () => {
+                const text = `Join me on Fundora and let's earn crypto together! 🚀`;
+                const url = document.getElementById('referral-link-display').textContent;
+                if(tg.openTelegramLink) {
+                    tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`);
+                }
+            });
+
+            function setupSwapInterface(fdrInputId, usdtOutputId, maxBtnClass, swapBtnId) {
+                const fdrInput = document.getElementById(fdrInputId), usdtOutput = document.getElementById(usdtOutputId), maxBtn = document.querySelector(`.${maxBtnClass}[data-target="${fdrInputId}"]`), swapBtn = document.getElementById(swapBtnId);
+                const swapRate = () => appSettings.swapRate || 0.0005;
+                function calculate() { const fdrAmount = parseFloat(fdrInput.value); usdtOutput.value = (!isNaN(fdrAmount) && fdrAmount > 0) ? (fdrAmount * swapRate()).toFixed(4) : "0.0000"; }
+                if (fdrInput) fdrInput.addEventListener('input', calculate);
+                if (maxBtn) maxBtn.addEventListener('click', () => { fdrInput.value = appData.fdrBalance; calculate(); });
+                if (swapBtn) swapBtn.addEventListener('click', () => {
+                    const fdrAmount = parseFloat(fdrInput.value);
+                    if (isNaN(fdrAmount) || fdrAmount <= 0) { alert("Please enter a valid amount."); return; }
+                    if (fdrAmount > appData.fdrBalance) { alert("Insufficient FDR balance."); return; }
+                    const usdtReceived = fdrAmount * swapRate();
+                    db.ref(`users/${user.id}`).transaction(currentData => {
+                        if (currentData && currentData.fdrBalance >= fdrAmount) {
+                            currentData.fdrBalance -= fdrAmount;
+                            currentData.usdtBalance = (currentData.usdtBalance || 0) + usdtReceived;
+                        }
+                        return currentData;
+                    });
+                    addHistory('swap', 'Swap to USDT', fdrAmount, 'FDR');
+                    fdrInput.value = ''; usdtOutput.value = '0.0000';
+                    alert(`Successfully swapped ${fdrAmount.toFixed(2)} FDR for ${usdtReceived.toFixed(4)} USDT.`);
+                });
+            }
+            setupSwapInterface('fdr-input-swap-page', 'usdt-output-swap-page', 'max-btn', 'swap-now-btn');
+            setupSwapInterface('fdr-input-withdraw-page', 'usdt-output-withdraw-page', 'max-btn', 'swap-now-withdraw-btn');
+            
+            const withdrawOptions = document.getElementById('withdrawal-options'), withdrawForm = document.getElementById('withdraw-form-container'), swapForm = document.getElementById('swap-form-container'), usdtWithdrawForm = document.getElementById('usdt-withdraw-form-container');
+            document.getElementById('select-withdraw').addEventListener('click', () => { withdrawOptions.style.display = 'none'; withdrawForm.style.display = 'block'; });
+            document.getElementById('select-usdt-withdraw').addEventListener('click', () => { withdrawOptions.style.display = 'none'; usdtWithdrawForm.style.display = 'block'; });
+            document.getElementById('select-swap').addEventListener('click', () => { withdrawOptions.style.display = 'none'; swapForm.style.display = 'block'; });
+            document.querySelectorAll('.btn-back').forEach(btn => { btn.addEventListener('click', () => { withdrawForm.style.display = 'none'; swapForm.style.display = 'none'; usdtWithdrawForm.style.display = 'none'; withdrawOptions.style.display = 'flex'; }); });
+            
+            document.getElementById('withdraw-now-btn').addEventListener('click', () => {
+                const amount = parseFloat(document.getElementById('withdraw-amount').value), address = document.getElementById('wallet-address').value;
+                const minWithdrawal = appSettings.minFdrWithdrawal || 250;
+                if(isNaN(amount) || amount < minWithdrawal) { alert(`Minimum withdrawal is ${minWithdrawal} FDR.`); return; }
+                if(amount > appData.fdrBalance) { alert("Insufficient FDR balance."); return; }
+                if(!/^0x[a-fA-F0-9]{40}$/.test(address)) { alert("Invalid BEP-20 address."); return; }
+                
+                db.ref(`users/${user.id}/fdrBalance`).transaction(bal => bal >= amount ? bal - amount : bal);
+                const withdrawalRef = db.ref('withdrawals').push();
+                withdrawalRef.set({ id: withdrawalRef.key, userId: user.id, wallet: address, amount: amount, currency: 'FDR', date: Date.now(), status: 'pending' });
+                addHistory('withdraw', 'FDR Withdrawal', amount, 'FDR');
+                alert(`Withdrawal request of ${amount} FDR submitted.`);
+            });
+            
+            document.getElementById('withdraw-usdt-now-btn').addEventListener('click', () => {
+                const amount = parseFloat(document.getElementById('usdt-withdraw-amount').value), address = document.getElementById('usdt-wallet-address').value;
+                const minWithdrawal = appSettings.minUsdtWithdrawal || 0.1;
+                if(isNaN(amount) || amount < minWithdrawal) { alert(`Minimum withdrawal is ${minWithdrawal} USDT.`); return; }
+                if(amount > appData.usdtBalance) { alert("Insufficient USDT balance."); return; }
+                if(!/^0x[a-fA-F0-9]{40}$/.test(address)) { alert("Invalid BEP-20 address."); return; }
+
+                db.ref(`users/${user.id}/usdtBalance`).transaction(bal => bal >= amount ? bal - amount : bal);
+                const withdrawalRef = db.ref('withdrawals').push();
+                withdrawalRef.set({ id: withdrawalRef.key, userId: user.id, wallet: address, amount: amount, currency: 'USDT', date: Date.now(), status: 'pending' });
+                addHistory('usdt_withdraw', 'USDT Withdrawal', amount, 'USDT');
+                alert(`Withdrawal request of ${amount} USDT submitted.`);
+            });
+
+            // --- INITIALIZATION ---
+            if (tg.ready) {
+                tg.ready();
+                tg.expand();
+            }
+            fetchAppSettings();
+            initializeUser();
+        });
+    </script>
+</body>
+</html>
